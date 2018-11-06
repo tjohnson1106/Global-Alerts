@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { View, StyleSheet, Text, TouchableWithoutFeedback } from "react-native";
+import SafeAreaView from "react-native-safe-area-view";
 
 const AlertContext = React.createContext({});
 
@@ -37,19 +38,33 @@ export class AlertProvider extends Component {
     });
   };
 
+  renderBody = () => {
+    const { title, body } = this.state;
+    return (
+      <>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.body}>{body}</Text>
+      </>
+    );
+  };
+
   render() {
-    const { title, body, visible, display } = this.state;
+    const { visible, display } = this.state;
+
+    const forceInset = {};
 
     const containerStyles = [styles.alertContainer];
 
     if (display === "bottom") {
       containerStyles.push(styles.bottom);
+      forceInset.bottom = "always";
     } else if (display === "top") {
       containerStyles.push(styles.top);
+      forceInset.top = "always";
     }
 
     return (
-      <AlertConsumer.Provider
+      <AlertContext.Provider
         value={{
           alert: this.alert
         }}
@@ -59,21 +74,20 @@ export class AlertProvider extends Component {
           display === "modal" && (
             <TouchableWithoutFeedback onPress={this.close}>
               <View style={styles.modalContainer}>
-                <View style={styles.modal}>
-                  <Text style={styles.title}>{title}</Text>
-                  <Text style={styles.body}>{body}</Text>
-                </View>
+                <View style={styles.modal}>{this.renderBody()}</View>
               </View>
             </TouchableWithoutFeedback>
           )}
         {visible &&
           display !== "modal" && (
-            <View style={styles.containerStyles}>
-              <Text style={styles.title}>{title}</Text>
-              <Text style={styles.body}>{body}</Text>
-            </View>
+            <TouchableWithoutFeedback onPress={this.close}>
+              <View style={styles.containerStyles}>
+                {/* remember this is the community iPhone X implementation */}
+                <SafeAreaView forceInset={forceInset}>{this.renderBody()}</SafeAreaView>
+              </View>
+            </TouchableWithoutFeedback>
           )}
-      </AlertConsumer.Provider>
+      </AlertContext.Provider>
     );
   }
 }

@@ -7,14 +7,14 @@ class App extends Component {
   render() {
     return (
       <View style={styles.container}>
-        <Text>Open up App.js to start working on your app!</Text>
+        <Text>Global Alerts</Text>
         <Button
           title="Press Button"
           onPress={() =>
             this.props.alert({
               title: "Title",
               body: "Body Text",
-              display: "bottom",
+              display: "bottom", // bottom, top, modal
               ctaText: "Confirm",
               ctaOnPress: () => alert("pressed cta")
             })

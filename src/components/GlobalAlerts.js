@@ -1,6 +1,16 @@
 import React, { Component } from "react";
-import { View, StyleSheet, Text, TouchableWithoutFeedback } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  Button,
+  Animated,
+  Dimensions
+} from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
+
+const w = Dimensions.get("window");
 
 const AlertContext = React.createContext({});
 
@@ -9,11 +19,15 @@ export const AlertConsumer = AlertContext.Consumer;
 const initialState = {
   visible: false,
   title: "",
-  body: ""
+  body: "",
+  ctaText: "",
+  ctaOnPress: null
 };
 
 export class AlertProvider extends Component {
   state = initialState;
+
+  animatedValue = new Animated.Value(0);
 
   alert = ({
     title = "",
@@ -24,26 +38,43 @@ export class AlertProvider extends Component {
   }) => {
     // alert("alert");
 
-    this.setState({
-      title,
-      body,
-      visible: true,
-      display
-    });
+    this.setState(
+      {
+        title,
+        body,
+        visible: true,
+        display,
+        ctaText,
+        ctaOnPress
+      },
+      () =>
+        Animated.timing(this.animatedValue, {
+          toValue: 1,
+          useNativeDriver: true,
+          duration: 150
+        }).start()
+    );
   };
 
   close = () => {
-    this.setState({
-      ...initialState
+    Animated.timing(this.animatedValue, {
+      toValue: 0,
+      useNativeDriver: true,
+      duration: 150
+    }).start(() => {
+      this.setState({
+        ...initialState
+      });
     });
   };
 
   renderBody = () => {
-    const { title, body } = this.state;
+    const { title, body, ctaText, ctaOnPress } = this.state;
     return (
       <>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.body}>{body}</Text>
+        {ctaOnPress && <Button title={ctaText} onPress={ctaOnPress} />}
       </>
     );
   };
@@ -57,9 +88,30 @@ export class AlertProvider extends Component {
 
     if (display === "bottom") {
       containerStyles.push(styles.bottom);
+      containerStyles.push({
+        transform: [
+          {
+            translateY: this.animatedValue.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-w.height, 0]
+            })
+          }
+        ]
+      });
       forceInset.bottom = "always";
     } else if (display === "top") {
       containerStyles.push(styles.top);
+
+      containerStyles.push({
+        transform: [
+          {
+            translateY: this.animatedValue.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-w.height, 0]
+            })
+          }
+        ]
+      });
       forceInset.top = "always";
     }
 
@@ -80,12 +132,12 @@ export class AlertProvider extends Component {
           )}
         {visible &&
           display !== "modal" && (
-            <TouchableWithoutFeedback onPress={this.close}>
-              <View style={styles.containerStyles}>
+            <Animated.View style={styles.containerStyles}>
+              <TouchableWithoutFeedback onPress={this.close}>
                 {/* remember this is the community iPhone X implementation */}
                 <SafeAreaView forceInset={forceInset}>{this.renderBody()}</SafeAreaView>
-              </View>
-            </TouchableWithoutFeedback>
+              </TouchableWithoutFeedback>
+            </Animated.View>
           )}
       </AlertContext.Provider>
     );
@@ -96,7 +148,7 @@ const styles = StyleSheet.create({
   alertContainer: {
     backgroundColor: "#fafbfc",
     paddingHorizontal: 20,
-    paddingVertical: 60
+    paddingVertical: 10
   },
 
   top: {

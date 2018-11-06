@@ -14,7 +14,7 @@ class App extends Component {
             this.props.alert({
               title: "Title",
               body: "Body Text",
-              display: "bottom", // top, modal
+              display: "bottom",
               ctaText: "Confirm",
               ctaOnPress: () => alert("pressed cta")
             })

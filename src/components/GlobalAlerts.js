@@ -8,7 +8,6 @@ import {
   Animated,
   Dimensions
 } from "react-native";
-// iphone X series fix
 import SafeAreaView from "react-native-safe-area-view";
 
 const w = Dimensions.get("window");
@@ -85,6 +84,7 @@ export class AlertProvider extends Component {
     ctaOnPress = null,
     theme = null
   }) => {
+    // alert('alert');
     this.setState(
       {
         title,
@@ -92,7 +92,8 @@ export class AlertProvider extends Component {
         visible: true,
         display,
         ctaText,
-        ctaOnPress
+        ctaOnPress,
+        theme
       },
       () => {
         Animated.timing(this.animatedValue, {
@@ -110,40 +111,46 @@ export class AlertProvider extends Component {
       useNativeDriver: true,
       duration: 150
     }).start(() => {
-      this.setState({
-        ...initialState
-      });
+      this.setState({ ...initialState });
     });
   };
-  _onLayout = ({ nativeEvent }) => {
-    const height = nativeEvent.layout.height;
 
-    this.setState({
-      contentHeight: height
-    });
+  onLayout = ({ nativeEvent }) => {
+    const height = nativeEvent.layout.height;
+    this.setState({ contentHeight: height });
   };
 
   getCustomStyles = () => {
-    // set on state in alert
     const { customStyles } = this.props;
     const { theme } = this.state;
 
     const container = [];
+    const text = [];
 
     if (theme) {
-      const themeStyles = customStyles[theme]; // {}, "error"
+      const themeStyles = customStyles[theme];
       container.push(themeStyles.container);
+      text.push(themeStyles.text);
     }
 
-    return { container };
+    return { container, text };
   };
 
   renderBody = () => {
     const { title, body, ctaText, ctaOnPress } = this.state;
+
+    const titleStyles = [styles.text];
+    const bodyStyles = [styles.body];
+
+    const { text } = this.getCustomStyles();
+
+    titleStyles.push(text);
+    bodyStyles.push(text);
+
     return (
       <React.Fragment>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.body}>{body}</Text>
+        <Text style={titleStyles}>{title}</Text>
+        <Text style={bodyStyles}>{body}</Text>
         {ctaOnPress && (
           <Button
             title={ctaText}
@@ -173,22 +180,19 @@ export class AlertProvider extends Component {
       }
     ];
 
-    modalStyles.push();
-
     return (
       <TouchableWithoutFeedback onPress={this.close}>
-        <View style={styles.modalStyles}>
-          <Animated.View style={styles.modal}>{this.renderBody()}</Animated.View>
+        <View style={styles.modalContainer}>
+          <Animated.View style={modalStyles}>{this.renderBody()}</Animated.View>
         </View>
       </TouchableWithoutFeedback>
     );
   };
 
-  otherThanModal = () => {
+  renderNotModal = () => {
     const { display, contentHeight } = this.state;
 
     const forceInset = {};
-
     const containerStyles = [styles.alertContainer];
 
     if (display === "bottom") {
@@ -203,7 +207,6 @@ export class AlertProvider extends Component {
           }
         ]
       });
-
       forceInset.bottom = "always";
     } else if (display === "top") {
       containerStyles.push(styles.top);
@@ -221,9 +224,10 @@ export class AlertProvider extends Component {
     }
 
     const { container } = this.getCustomStyles();
+    containerStyles.push(container);
 
     return (
-      <Animated.View style={styles.containerStyles} onLayout={this._onLayout}>
+      <Animated.View style={containerStyles} onLayout={this.onLayout}>
         <TouchableWithoutFeedback onPress={this.close}>
           <SafeAreaView forceInset={forceInset}>{this.renderBody()}</SafeAreaView>
         </TouchableWithoutFeedback>
@@ -235,14 +239,10 @@ export class AlertProvider extends Component {
     const { visible, display } = this.state;
 
     return (
-      <AlertContext.Provider
-        value={{
-          alert: this.alert
-        }}
-      >
+      <AlertContext.Provider value={{ alert: this.alert }}>
         {this.props.children}
         {visible && display === "modal" && this.renderModal()}
-        {visible && display !== "modal" && this.otherThanModal()}
+        {visible && display !== "modal" && this.renderNotModal()}
       </AlertContext.Provider>
     );
   }

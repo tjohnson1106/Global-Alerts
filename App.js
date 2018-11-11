@@ -13,11 +13,12 @@ class App extends Component {
           onPress={() =>
             this.props.alert({
               title: "Title",
-              body: "Body Text",
+              body: "This Body Text",
 
               display: "top",
               ctaText: "Confirm",
-              ctaOnPress: () => alert("pressed cta")
+              ctaOnPress: () => alert("pressed cta"),
+              theme: "error" // or success
             })
           }
         />
@@ -53,14 +54,29 @@ class App extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFF11190",
     alignItems: "center",
     justifyContent: "center"
   }
 });
 
 export default () => (
-  <AlertProvider>
+  <AlertProvider
+    customStyles={{
+      error: {
+        container: {
+          backgroundColor: "#cc0000"
+        },
+        text: {},
+        button: {}
+      },
+      success: {
+        container: {
+          backgroundColor: "#4bb543"
+        }
+      }
+    }}
+  >
     <AlertConsumer>{({ alert }) => <App alert={alert} />}</AlertConsumer>
   </AlertProvider>
 );

@@ -8,11 +8,57 @@ import {
   Animated,
   Dimensions
 } from "react-native";
+// iphone X series fix
 import SafeAreaView from "react-native-safe-area-view";
 
 const w = Dimensions.get("window");
 
-const AlertContext = React.createContext({});
+const styles = StyleSheet.create({
+  alertContainer: {
+    backgroundColor: "#fafbfc",
+    paddingHorizontal: 20,
+    paddingVertical: 10
+  },
+  top: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e1e4e8"
+  },
+  bottom: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#e1e4e8"
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0
+  },
+  modal: {
+    backgroundColor: "#fafbfc",
+    paddingHorizontal: 20,
+    marginHorizontal: 10
+  },
+  title: {
+    fontSize: 20
+  },
+  body: {
+    fontSize: 16
+  }
+});
+
+export const AlertContext = React.createContext({});
 
 export const AlertConsumer = AlertContext.Consumer;
 
@@ -20,9 +66,10 @@ const initialState = {
   visible: false,
   title: "",
   body: "",
-  ctaText: "",
   ctaOnPress: null,
-  contentHeight: w.height
+  ctaText: "",
+  contentHeight: w.height,
+  theme: null
 };
 
 export class AlertProvider extends Component {
@@ -35,10 +82,9 @@ export class AlertProvider extends Component {
     body = "",
     display = "bottom", // top, modal
     ctaText = "",
-    ctaOnPress = null
+    ctaOnPress = null,
+    theme = null
   }) => {
-    // alert("alert");
-
     this.setState(
       {
         title,
@@ -75,6 +121,21 @@ export class AlertProvider extends Component {
     this.setState({
       contentHeight: height
     });
+  };
+
+  getCustomStyles = () => {
+    // set on state in alert
+    const { customStyles } = this.props;
+    const { theme } = this.state;
+
+    const container = [];
+
+    if (theme) {
+      const themeStyles = customStyles[theme]; // {}, "error"
+      container.push(themeStyles.container);
+    }
+
+    return { container };
   };
 
   renderBody = () => {
@@ -123,16 +184,26 @@ export class AlertProvider extends Component {
     );
   };
 
-  render() {
-    const { visible, display } = this.state;
+  otherThanModal = () => {
+    const { display, contentHeight } = this.state;
 
     const forceInset = {};
 
     const containerStyles = [styles.alertContainer];
 
-    const modalStyles = [styles.modal];
-
     if (display === "bottom") {
+      containerStyles.push(styles.bottom);
+      containerStyles.push({
+        transform: [
+          {
+            translateY: this.animatedValue.interpolate({
+              inputRange: [0, 1],
+              outputRange: [contentHeight, 0]
+            })
+          }
+        ]
+      });
+
       forceInset.bottom = "always";
     } else if (display === "top") {
       containerStyles.push(styles.top);
@@ -147,9 +218,21 @@ export class AlertProvider extends Component {
         ]
       });
       forceInset.top = "always";
-    } else if (display === "modal") {
-      modalStyles.push({});
     }
+
+    const { container } = this.getCustomStyles();
+
+    return (
+      <Animated.View style={styles.containerStyles} onLayout={this._onLayout}>
+        <TouchableWithoutFeedback onPress={this.close}>
+          <SafeAreaView forceInset={forceInset}>{this.renderBody()}</SafeAreaView>
+        </TouchableWithoutFeedback>
+      </Animated.View>
+    );
+  };
+
+  render() {
+    const { visible, display } = this.state;
 
     return (
       <AlertContext.Provider
@@ -159,62 +242,8 @@ export class AlertProvider extends Component {
       >
         {this.props.children}
         {visible && display === "modal" && this.renderModal()}
-        {visible && display !== "modal" && (
-          <Animated.View style={styles.containerStyles} onLayout={this._onLayout}>
-            <TouchableWithoutFeedback onPress={this.close}>
-              {/* remember this is the community iPhone X implementation */}
-              <SafeAreaView forceInset={forceInset}>{this.renderBody()}</SafeAreaView>
-            </TouchableWithoutFeedback>
-          </Animated.View>
-        )}
+        {visible && display !== "modal" && this.otherThanModal()}
       </AlertContext.Provider>
     );
   }
 }
-
-const styles = StyleSheet.create({
-  alertContainer: {
-    backgroundColor: "#fafbfc",
-    paddingHorizontal: 20,
-    paddingVertical: 10
-  },
-
-  top: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e1e4e8"
-  },
-  bottom: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopWidth: 1,
-    borderTopColor: "#e1e4e8"
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0
-  },
-  modal: {
-    backgroundColor: "#fafbfc",
-    paddingHorizontal: 20,
-    marginHorizontal: 10
-  },
-  title: {
-    fontSize: 20
-  },
-
-  body: {
-    fontSize: 16
-  }
-});

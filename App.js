@@ -9,12 +9,37 @@ class App extends Component {
       <View style={styles.container}>
         <Text>Global Alerts</Text>
         <Button
-          title="Press Button"
+          title="Top"
           onPress={() =>
             this.props.alert({
               title: "Title",
               body: "Body Text",
-              display: "bottom", // bottom, top, modal
+
+              display: "top",
+              ctaText: "Confirm",
+              ctaOnPress: () => alert("pressed cta")
+            })
+          }
+        />
+        <Button
+          title="Modal"
+          onPress={() =>
+            this.props.alert({
+              title: "Bottom",
+              body: "Body Text",
+              display: "bottom",
+              ctaText: "Confirm",
+              ctaOnPress: () => alert("pressed cta")
+            })
+          }
+        />
+        <Button
+          title="Bottom"
+          onPress={() =>
+            this.props.alert({
+              title: "Modal",
+              body: "Body Text",
+              display: "modal",
               ctaText: "Confirm",
               ctaOnPress: () => alert("pressed cta")
             })

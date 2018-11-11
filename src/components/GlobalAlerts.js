@@ -21,7 +21,8 @@ const initialState = {
   title: "",
   body: "",
   ctaText: "",
-  ctaOnPress: null
+  ctaOnPress: null,
+  contentHeight: w.height
 };
 
 export class AlertProvider extends Component {
@@ -47,12 +48,13 @@ export class AlertProvider extends Component {
         ctaText,
         ctaOnPress
       },
-      () =>
+      () => {
         Animated.timing(this.animatedValue, {
           toValue: 1,
           useNativeDriver: true,
           duration: 150
-        }).start()
+        }).start();
+      }
     );
   };
 
@@ -67,24 +69,33 @@ export class AlertProvider extends Component {
       });
     });
   };
+  _onLayout = ({ nativeEvent }) => {
+    const height = nativeEvent.layout.height;
+
+    this.setState({
+      contentHeight: height
+    });
+  };
 
   renderBody = () => {
     const { title, body, ctaText, ctaOnPress } = this.state;
     return (
-      <>
+      <React.Fragment>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.body}>{body}</Text>
         {ctaOnPress && <Button title={ctaText} onPress={ctaOnPress} />}
-      </>
+      </React.Fragment>
     );
   };
 
   render() {
-    const { visible, display } = this.state;
+    const { visible, display, contentHeight } = this.state;
 
     const forceInset = {};
 
     const containerStyles = [styles.alertContainer];
+
+    const modalStyles = [styles.modal];
 
     if (display === "bottom") {
       containerStyles.push(styles.bottom);
@@ -93,7 +104,7 @@ export class AlertProvider extends Component {
           {
             translateY: this.animatedValue.interpolate({
               inputRange: [0, 1],
-              outputRange: [-w.height, 0]
+              outputRange: [contentHeight, 0]
             })
           }
         ]
@@ -101,18 +112,29 @@ export class AlertProvider extends Component {
       forceInset.bottom = "always";
     } else if (display === "top") {
       containerStyles.push(styles.top);
-
       containerStyles.push({
         transform: [
           {
             translateY: this.animatedValue.interpolate({
               inputRange: [0, 1],
-              outputRange: [-w.height, 0]
+              outputRange: [-contentHeight, 0]
             })
           }
         ]
       });
       forceInset.top = "always";
+    } else if (display === "modal") {
+      modalStyles.push({
+        opacity: this.animatedValue,
+        transform: [
+          {
+            scale: this.animatedValue.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.5, 1]
+            })
+          }
+        ]
+      });
     }
 
     return (
@@ -122,23 +144,21 @@ export class AlertProvider extends Component {
         }}
       >
         {this.props.children}
-        {visible &&
-          display === "modal" && (
+        {visible && display === "modal" && (
+          <TouchableWithoutFeedback onPress={this.close}>
+            <View style={styles.modalStyles}>
+              <Animated.View style={styles.modal}>{this.renderBody()}</Animated.View>
+            </View>
+          </TouchableWithoutFeedback>
+        )}
+        {visible && display !== "modal" && (
+          <Animated.View style={styles.containerStyles} onLayout={this._onLayout}>
             <TouchableWithoutFeedback onPress={this.close}>
-              <View style={styles.modalContainer}>
-                <View style={styles.modal}>{this.renderBody()}</View>
-              </View>
+              {/* remember this is the community iPhone X implementation */}
+              <SafeAreaView forceInset={forceInset}>{this.renderBody()}</SafeAreaView>
             </TouchableWithoutFeedback>
-          )}
-        {visible &&
-          display !== "modal" && (
-            <Animated.View style={styles.containerStyles}>
-              <TouchableWithoutFeedback onPress={this.close}>
-                {/* remember this is the community iPhone X implementation */}
-                <SafeAreaView forceInset={forceInset}>{this.renderBody()}</SafeAreaView>
-              </TouchableWithoutFeedback>
-            </Animated.View>
-          )}
+          </Animated.View>
+        )}
       </AlertContext.Provider>
     );
   }

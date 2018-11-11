@@ -83,13 +83,48 @@ export class AlertProvider extends Component {
       <React.Fragment>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.body}>{body}</Text>
-        {ctaOnPress && <Button title={ctaText} onPress={ctaOnPress} />}
+        {ctaOnPress && (
+          <Button
+            title={ctaText}
+            onPress={() => {
+              ctaOnPress();
+              this.close();
+            }}
+          />
+        )}
       </React.Fragment>
     );
   };
 
+  renderModal = () => {
+    const modalStyles = [
+      styles.modal,
+      {
+        opacity: this.animatedValue,
+        transform: [
+          {
+            scale: this.animatedValue.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.5, 1]
+            })
+          }
+        ]
+      }
+    ];
+
+    modalStyles.push();
+
+    return (
+      <TouchableWithoutFeedback onPress={this.close}>
+        <View style={styles.modalStyles}>
+          <Animated.View style={styles.modal}>{this.renderBody()}</Animated.View>
+        </View>
+      </TouchableWithoutFeedback>
+    );
+  };
+
   render() {
-    const { visible, display, contentHeight } = this.state;
+    const { visible, display } = this.state;
 
     const forceInset = {};
 
@@ -98,17 +133,6 @@ export class AlertProvider extends Component {
     const modalStyles = [styles.modal];
 
     if (display === "bottom") {
-      containerStyles.push(styles.bottom);
-      containerStyles.push({
-        transform: [
-          {
-            translateY: this.animatedValue.interpolate({
-              inputRange: [0, 1],
-              outputRange: [contentHeight, 0]
-            })
-          }
-        ]
-      });
       forceInset.bottom = "always";
     } else if (display === "top") {
       containerStyles.push(styles.top);
@@ -124,17 +148,7 @@ export class AlertProvider extends Component {
       });
       forceInset.top = "always";
     } else if (display === "modal") {
-      modalStyles.push({
-        opacity: this.animatedValue,
-        transform: [
-          {
-            scale: this.animatedValue.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0.5, 1]
-            })
-          }
-        ]
-      });
+      modalStyles.push({});
     }
 
     return (
@@ -144,13 +158,7 @@ export class AlertProvider extends Component {
         }}
       >
         {this.props.children}
-        {visible && display === "modal" && (
-          <TouchableWithoutFeedback onPress={this.close}>
-            <View style={styles.modalStyles}>
-              <Animated.View style={styles.modal}>{this.renderBody()}</Animated.View>
-            </View>
-          </TouchableWithoutFeedback>
-        )}
+        {visible && display === "modal" && this.renderModal()}
         {visible && display !== "modal" && (
           <Animated.View style={styles.containerStyles} onLayout={this._onLayout}>
             <TouchableWithoutFeedback onPress={this.close}>
